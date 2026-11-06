@@ -1,0 +1,38 @@
+title: macOS Suspicious AppleScript Execution
+id: 6b2d9f41-8c73-4a15-b290-5e7c3d1f6249
+status: experimental
+description: >
+    Detects osascript executions involving potentially
+    suspicious commands and remote content retrieval.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: macos
+    category: process_creation
+
+detection:
+    selection_image:
+        Image|endswith: '/osascript'
+
+    selection_command:
+        CommandLine|contains:
+            - 'curl'
+            - 'wget'
+            - 'do shell script'
+            - 'http://'
+            - 'https://'
+
+    condition: selection_image and selection_command
+
+falsepositives:
+    - Legitimate AppleScript automation
+    - Approved administrative scripts
+    - Software installation routines
+
+level: high
+
+tags:
+    - attack.execution
+    - attack.t1059.002
+    - attack.command_and_control
