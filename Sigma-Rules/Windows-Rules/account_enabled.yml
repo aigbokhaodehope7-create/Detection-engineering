@@ -1,0 +1,29 @@
+title: Windows User Account Enabled
+id: 2f8a6d31-9c45-4e72-b180-5a3d7c9e6142
+status: experimental
+description: >
+    Detects when a previously disabled Windows user account
+    is enabled, potentially restoring access to a dormant account.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    service: security
+
+detection:
+    selection:
+        EventID: 4722
+
+    condition: selection
+
+falsepositives:
+    - Approved account reactivation
+    - Employee returning from leave
+    - Legitimate IT account administration
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.t1078
