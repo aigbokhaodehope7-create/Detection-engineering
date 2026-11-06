@@ -1,0 +1,29 @@
+title: Windows Service Configuration Changed
+id: 8a3f6d21-9c45-4b72-a180-5e7d2c9f6134
+status: experimental
+description: >
+    Detects changes to Windows service configurations that
+    may indicate service hijacking or persistence activity.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    service: system
+
+detection:
+    selection:
+        EventID: 7040
+
+    condition: selection
+
+falsepositives:
+    - Approved service configuration changes
+    - Legitimate software updates
+    - System administrator maintenance
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.t1543.003
