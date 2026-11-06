@@ -1,0 +1,31 @@
+title: Linux SSH Failed Authentication
+id: 8d3f7a21-5c94-4e60-b182-9a6d3f5c7142
+status: experimental
+description: >
+    Detects failed SSH authentication attempts on Linux systems.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: linux
+    service: sshd
+
+detection:
+    selection:
+        message|contains:
+            - 'Failed password'
+            - 'Invalid user'
+
+    condition: selection
+
+falsepositives:
+    - Users entering incorrect passwords
+    - Forgotten SSH credentials
+    - Misconfigured SSH clients
+
+level: medium
+
+tags:
+    - attack.credential_access
+    - attack.t1110
+    - attack.initial_access
