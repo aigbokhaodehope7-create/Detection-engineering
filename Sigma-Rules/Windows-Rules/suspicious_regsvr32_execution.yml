@@ -1,0 +1,37 @@
+title: Suspicious Regsvr32 Scriptlet Execution
+id: 3f8a2c71-6d94-4e50-b182-9a7c5d3e6142
+status: experimental
+description: >
+    Detects regsvr32.exe executions using scriptlet-related
+    arguments and remote script references.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    category: process_creation
+
+detection:
+    selection_image:
+        Image|endswith: '\regsvr32.exe'
+
+    selection_scripting:
+        CommandLine|contains:
+            - 'scrobj.dll'
+            - '/i:http'
+            - '/i:https'
+            - 'javascript:'
+            - 'vbscript:'
+
+    condition: selection_image and selection_scripting
+
+falsepositives:
+    - Legitimate software component registration
+    - Approved enterprise administration scripts
+
+level: high
+
+tags:
+    - attack.defense_evasion
+    - attack.execution
+    - attack.t1218.010
