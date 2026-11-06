@@ -1,0 +1,30 @@
+title: Linux SSH Configuration File Modification
+id: 9e3a6c21-5d84-4f72-b190-7c2d8e5f6143
+status: experimental
+description: >
+    Detects modifications to the OpenSSH server configuration
+    file that may indicate unauthorized security changes.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: linux
+    category: file_event
+
+detection:
+    selection:
+        TargetFilename|endswith: '/etc/ssh/sshd_config'
+
+    condition: selection
+
+falsepositives:
+    - Approved SSH configuration changes
+    - System administrator maintenance
+    - Security hardening activities
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.defense_evasion
+    - attack.t1098
