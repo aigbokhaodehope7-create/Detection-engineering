@@ -1,0 +1,30 @@
+title: Windows User Account Modification Detected
+id: 9d4c2a71-6f83-4b15-a920-3e7c8d1f5642
+status: experimental
+description: >
+    Detects modifications to existing Windows user accounts
+    that may indicate account manipulation or unauthorised changes.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    service: security
+
+detection:
+    selection:
+        EventID: 4738
+
+    condition: selection
+
+falsepositives:
+    - Approved IT administrator account maintenance
+    - Legitimate user account updates
+    - Organisational account management activities
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1098
