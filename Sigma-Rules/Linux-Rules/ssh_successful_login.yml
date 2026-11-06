@@ -1,0 +1,29 @@
+title: Linux SSH Successful Authentication
+id: 5b9d2e71-8c43-4f60-a192-7d3e6c5f8142
+status: experimental
+description: >
+    Detects successful SSH authentication events on Linux systems.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: linux
+    service: sshd
+
+detection:
+    selection:
+        message|contains: 'Accepted password'
+
+    condition: selection
+
+falsepositives:
+    - Legitimate administrator logins
+    - Approved remote employee access
+    - Automated SSH administration
+
+level: low
+
+tags:
+    - attack.initial_access
+    - attack.t1078
+    - attack.lateral_movement
