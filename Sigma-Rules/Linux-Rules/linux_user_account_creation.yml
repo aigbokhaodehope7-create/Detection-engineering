@@ -1,0 +1,32 @@
+title: Linux User Account Creation
+id: 2c8e6a41-9d35-4f72-b180-6a3d5e7c9142
+status: experimental
+description: >
+    Detects execution of common Linux commands used to
+    create new user accounts.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: linux
+    category: process_creation
+
+detection:
+    selection:
+        Image|endswith:
+            - '/useradd'
+            - '/adduser'
+
+    condition: selection
+
+falsepositives:
+    - Legitimate employee account provisioning
+    - Approved system administration
+    - Automated account management
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.t1136.001
+    - attack.execution
