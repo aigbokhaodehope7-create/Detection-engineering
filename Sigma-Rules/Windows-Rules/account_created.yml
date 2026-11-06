@@ -1,0 +1,26 @@
+title: Windows User Account Created
+id: 3b7e9a21-6d45-4f82-b190-8c2a5e7d3146
+status: experimental
+description: Detects the creation of a new Windows user account.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    service: security
+
+detection:
+    selection:
+        EventID: 4720
+
+    condition: selection
+
+falsepositives:
+    - Legitimate IT administrator account provisioning
+    - Approved employee onboarding
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.t1136.001
