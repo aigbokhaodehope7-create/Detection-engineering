@@ -1,0 +1,35 @@
+title: Suspicious Windows Registry Modification
+id: 2e8a6d31-7c45-4f92-b180-9a3d5e7c6142
+status: experimental
+description: >
+    Detects registry modifications involving common Windows
+    persistence locations using Sysmon registry events.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    category: registry_set
+
+detection:
+    selection:
+        TargetObject|contains:
+            - '\CurrentVersion\Run'
+            - '\CurrentVersion\RunOnce'
+            - '\Winlogon\Shell'
+            - '\Winlogon\Userinit'
+            - '\Image File Execution Options\'
+
+    condition: selection
+
+falsepositives:
+    - Legitimate software installation
+    - Approved endpoint configuration changes
+    - Security software updates
+
+level: high
+
+tags:
+    - attack.persistence
+    - attack.t1547.001
+    - attack.defense_evasion
