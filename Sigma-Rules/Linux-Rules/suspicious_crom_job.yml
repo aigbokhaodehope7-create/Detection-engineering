@@ -1,0 +1,37 @@
+title: Linux Suspicious Cron Job Modification
+id: 6d2a9f41-8c73-4b15-a290-5e7c3d1f6248
+status: experimental
+description: >
+    Detects commands that may be used to create or modify
+    scheduled cron jobs on Linux systems.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: linux
+    category: process_creation
+
+detection:
+    selection_crontab:
+        Image|endswith: '/crontab'
+        CommandLine|contains: '-e'
+
+    selection_cron_paths:
+        CommandLine|contains:
+            - '/etc/cron.d/'
+            - '/etc/cron.daily/'
+            - '/var/spool/cron/'
+
+    condition: selection_crontab or selection_cron_paths
+
+falsepositives:
+    - Legitimate scheduled task configuration
+    - Approved system maintenance
+    - Software installation and updates
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.t1053.003
+    - attack.execution
