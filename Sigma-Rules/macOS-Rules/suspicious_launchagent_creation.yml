@@ -1,0 +1,36 @@
+title: macOS Suspicious LaunchAgent Creation
+id: 3a7d9c21-5e84-4b60-a192-8f6c2d5e7143
+status: experimental
+description: >
+    Detects creation of property list files in common
+    macOS LaunchAgent persistence directories.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: macos
+    category: file_event
+
+detection:
+    selection:
+        TargetFilename|contains:
+            - '/Library/LaunchAgents/'
+            - '/Library/LaunchDaemons/'
+            - '/Users/'
+
+    selection_extension:
+        TargetFilename|endswith: '.plist'
+
+    condition: selection and selection_extension
+
+falsepositives:
+    - Legitimate application installations
+    - Approved software updates
+    - Normal administrator configuration
+
+level: medium
+
+tags:
+    - attack.persistence
+    - attack.t1543.001
+    - attack.t1543.004
