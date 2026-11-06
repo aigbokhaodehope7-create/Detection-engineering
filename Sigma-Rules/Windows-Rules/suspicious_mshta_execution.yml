@@ -1,0 +1,39 @@
+title: Suspicious Mshta Script Execution
+id: 4a9c2e71-8d35-4f60-b182-7e3c5d9a6142
+status: experimental
+description: >
+    Detects mshta.exe executions involving remote URLs,
+    script engines, or suspicious file locations.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    category: process_creation
+
+detection:
+    selection_image:
+        Image|endswith: '\mshta.exe'
+
+    selection_command:
+        CommandLine|contains:
+            - 'http://'
+            - 'https://'
+            - 'javascript:'
+            - 'vbscript:'
+            - '\AppData\'
+            - '\Temp\'
+
+    condition: selection_image and selection_command
+
+falsepositives:
+    - Legitimate legacy HTA applications
+    - Approved administrative scripts
+    - Enterprise applications using HTA files
+
+level: high
+
+tags:
+    - attack.execution
+    - attack.defense_evasion
+    - attack.t1218.005
