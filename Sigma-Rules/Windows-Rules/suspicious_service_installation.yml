@@ -1,0 +1,36 @@
+title: Suspicious Windows Service Installation
+id: 4e7b9c21-6a35-4d82-b190-7f3c5e8a2146
+status: experimental
+description: >
+    Detects newly installed Windows services whose executable
+    paths point to commonly abused directories.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    service: system
+
+detection:
+    selection_event:
+        EventID: 7045
+
+    selection_path:
+        ImagePath|contains:
+            - '\AppData\'
+            - '\Temp\'
+            - '\Users\Public\'
+            - '\Downloads\'
+
+    condition: selection_event and selection_path
+
+falsepositives:
+    - Legitimate software installations
+    - Approved administrative tools
+    - Applications installed in non-standard directories
+
+level: high
+
+tags:
+    - attack.persistence
+    - attack.t1543.003
