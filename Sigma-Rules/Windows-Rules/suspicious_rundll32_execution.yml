@@ -1,0 +1,38 @@
+title: Suspicious Rundll32 Execution
+id: 5d8a2c71-9e43-4b60-a182-7f3c6d5e9142
+status: experimental
+description: >
+    Detects rundll32.exe executions involving potentially
+    suspicious DLL paths and script-related command arguments.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    category: process_creation
+
+detection:
+    selection_image:
+        Image|endswith: '\rundll32.exe'
+
+    selection_path:
+        CommandLine|contains:
+            - '\AppData\'
+            - '\Temp\'
+            - '\Users\Public\'
+            - 'http://'
+            - 'https://'
+
+    condition: selection_image and selection_path
+
+falsepositives:
+    - Legitimate software using rundll32.exe
+    - Approved administrative scripts
+    - Applications loading DLLs from user directories
+
+level: high
+
+tags:
+    - attack.defense_evasion
+    - attack.execution
+    - attack.t1218.011
