@@ -1,0 +1,42 @@
+title: macOS Suspicious Terminal Command Execution
+id: 8c3e7a21-5d94-4f60-b182-6a9d3e5f7142
+status: experimental
+description: >
+    Detects selected macOS shell commands that may indicate
+    suspicious reconnaissance, file retrieval, or system changes.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: macos
+    category: process_creation
+
+detection:
+    selection_shell:
+        Image|endswith:
+            - '/bash'
+            - '/zsh'
+            - '/sh'
+
+    selection_commands:
+        CommandLine|contains:
+            - 'curl '
+            - 'wget '
+            - 'chmod '
+            - 'dscl '
+            - 'security '
+            - 'osascript '
+
+    condition: selection_shell and selection_commands
+
+falsepositives:
+    - Legitimate administrator activity
+    - Approved maintenance scripts
+    - Software installation
+
+level: medium
+
+tags:
+    - attack.execution
+    - attack.discovery
+    - attack.t1059.004
