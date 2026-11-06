@@ -1,0 +1,38 @@
+title: Linux Suspicious Sudo Command Execution
+id: 7a3d9c21-6e84-4b50-a192-5f8c2d7e6143
+status: experimental
+description: >
+    Detects sudo commands involving potentially suspicious
+    administrative utilities and shell execution.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: linux
+    service: sudo
+
+detection:
+    selection:
+        COMMAND|contains:
+            - 'bash'
+            - 'sh'
+            - 'python'
+            - 'perl'
+            - 'nc'
+            - 'ncat'
+            - 'chmod'
+            - 'useradd'
+
+    condition: selection
+
+falsepositives:
+    - Legitimate system administration
+    - Approved maintenance scripts
+    - Software installation
+
+level: medium
+
+tags:
+    - attack.privilege_escalation
+    - attack.t1548.003
+    - attack.execution
