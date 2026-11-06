@@ -1,0 +1,38 @@
+title: Suspicious Windows Scheduled Task Creation
+id: 5c8a2e71-3d94-4f60-b127-9a6e5d3c8142
+status: experimental
+description: >
+    Detects scheduled task creation events involving suspicious
+    execution paths or scripting interpreters.
+author: Hope - HopeLabs Detection Engineering
+date: 2026-11-06
+
+logsource:
+    product: windows
+    service: security
+
+detection:
+    selection_event:
+        EventID: 4698
+
+    selection_command:
+        TaskContent|contains:
+            - 'powershell.exe'
+            - 'cmd.exe'
+            - 'wscript.exe'
+            - 'mshta.exe'
+            - '\AppData\'
+            - '\Temp\'
+
+    condition: selection_event and selection_command
+
+falsepositives:
+    - Legitimate software installation
+    - Approved administrative scheduled tasks
+    - Enterprise management tools
+
+level: high
+
+tags:
+    - attack.persistence
+    - attack.t1053.005
