@@ -1,0 +1,28 @@
+# Detection 012 – Privileged Group Membership Changes
+
+## 1. Overview
+
+Windows records security-enabled group membership changes through specific Security Event IDs.
+
+Attackers may add compromised accounts to privileged groups to gain elevated access and maintain persistence.
+
+## 2. Objective
+
+Monitor changes to security-enabled groups and identify unauthorized additions to privileged groups.
+
+## 3. Windows Event Information
+
+| Event ID | Description |
+|---|---|
+| 4728 | Member added to a security-enabled global group |
+| 4732 | Member added to a security-enabled local group |
+| 4756 | Member added to a security-enabled universal group |
+
+## 4. Detection Query – Identify Group Membership Changes
+
+```spl
+index=YOUR_INDEX sourcetype="YOUR_WINDOWS_SECURITY_SOURCETYPE"
+(EventCode=4728 OR EventCode=4732 OR EventCode=4756)
+| table _time host SubjectUserName MemberName TargetUserName
+        Group_Name Group_Domain
+| sort - _time
