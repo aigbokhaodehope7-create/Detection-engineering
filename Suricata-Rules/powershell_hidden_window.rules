@@ -1,0 +1,26 @@
+# powershell_hidden_window.rules - Suricata network detections related to the PowerShell Detection Lab
+# The lab's activity ran entirely on the Windows VM and generated no network detections of its own.
+# These rules look for the same flags (hidden window, execution-policy bypass, encoded command)
+# when they travel in cleartext HTTP or TCP, for example in a delivered script or a reverse shell.
+# STATUS: written for lab use, NOT tested against live traffic. Validate with:
+#   sudo suricata -T -c /etc/suricata/suricata.yaml -S powershell_hidden_window.rules
+# SIDs 1000201+ avoid clashing with phishing.rules (1000001-1000007) and powershell_encoded.rules (1000101-1000107).
+# Related Wazuh rule: 100600 (hidden window, T1059.001 / T1564.003).
+
+# T1564.003: PowerShell -WindowStyle Hidden (or -w hidden / -w 1) in an outbound HTTP request body
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"LAB PSHIDDEN PowerShell hidden window flag in outbound HTTP request body"; flow:established,to_server; http.request_body; content:"powershell"; nocase; pcre:"/-w(indowstyle)?\s+(hidden|1)\b/i"; classtype:trojan-activity; metadata:mitre_technique_id T1564.003; sid:1000201; rev:1;)
+
+# T1564.003: PowerShell hidden window flag in a script or document downloaded over HTTP
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LAB PSHIDDEN PowerShell hidden window flag in HTTP response"; flow:established,to_client; file.data; content:"powershell"; nocase; pcre:"/-w(indowstyle)?\s+(hidden|1)\b/i"; classtype:trojan-activity; metadata:mitre_technique_id T1564.003; sid:1000202; rev:1;)
+
+# T1564.003: PowerShell hidden window flag in any cleartext TCP stream (reverse shell or non-HTTP delivery)
+alert tcp $HOME_NET any <> $EXTERNAL_NET any (msg:"LAB PSHIDDEN PowerShell hidden window flag in cleartext TCP stream"; flow:established; content:"powershell"; nocase; pcre:"/powershell(\.exe)?\s[^\r\n]{0,150}-w(indowstyle)?\s+(hidden|1)\b/i"; classtype:trojan-activity; metadata:mitre_technique_id T1564.003; sid:1000203; rev:1;)
+
+# T1059.001: -ExecutionPolicy Bypass delivered in an HTTP response
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LAB PSHIDDEN PowerShell ExecutionPolicy Bypass in HTTP response"; flow:established,to_client; file.data; content:"powershell"; nocase; pcre:"/-(executionpolicy|ep)\s+bypass\b/i"; classtype:trojan-activity; metadata:mitre_technique_id T1059.001; sid:1000204; rev:1;)
+
+# T1059.001 + T1564.003: encoded command, bypass and hidden window together in one HTTP response (any order; higher priority)
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LAB PSHIDDEN PowerShell encoded + bypass + hidden window in HTTP response"; flow:established,to_client; file.data; content:"-EncodedCommand"; nocase; content:"Bypass"; nocase; content:"Hidden"; nocase; classtype:trojan-activity; priority:1; metadata:mitre_technique_id T1059.001; sid:1000205; rev:1;)
+
+# T1027: script that builds a Base64 UTF-16 command (the way the lab built its encoded command), sent over HTTP
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"LAB PSHIDDEN PowerShell Base64 command-building code in outbound HTTP request body"; flow:established,to_server; http.request_body; content:"ToBase64String"; nocase; content:"Unicode.GetBytes"; nocase; distance:0; within:80; classtype:policy-violation; metadata:mitre_technique_id T1027; sid:1000206; rev:1;)
