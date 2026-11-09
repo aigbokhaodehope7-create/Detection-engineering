@@ -1,0 +1,107 @@
+<!--
+  Phishing-driven execution detection rules for Wazuh
+  Lab: Wazuh manager + Windows 10 endpoint with Sysmon (Event ID 1)
+  Place inside /var/ossec/etc/rules/local_rules.xml
+  Parent rule 61603 = built-in Sysmon Event 1 (process creation)
+
+  Verified firing in lab: 100105, 100107, 100111, 100510
+  Written but NOT yet tested: 100104, 100106, 100110
+
+  Rule order matters: a rule must be defined BEFORE any rule that refers to it.
+  After editing run: sudo /var/ossec/bin/wazuh-analysisd -t
+  then: sudo systemctl restart wazuh-manager
+-->
+
+<group name="phishing,office_exploit,">
+
+  <!-- T1566.001 / T1204.002: Office app spawning a shell or scripting engine (NOT TESTED) -->
+  <rule id="100104" level="14">
+    <if_sid>61603</if_sid>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)(WINWORD|EXCEL|POWERPNT|OUTLOOK|MSACCESS)\.EXE</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(cmd|powershell|pwsh|wscript|cscript|mshta|rundll32|regsvr32|certutil)\.exe</field>
+    <description>Possible Phishing Payload: Office application spawned a shell/script interpreter</description>
+    <mitre>
+      <id>T1566.001</id>
+      <id>T1204.002</id>
+    </mitre>
+  </rule>
+
+  <!-- T1218.005: mshta.exe execution, commonly used for HTA phishing payloads (VERIFIED) -->
+  <rule id="100105" level="13">
+    <if_sid>61603</if_sid>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)mshta\.exe</field>
+    <description>mshta.exe execution detected - possible malicious HTA Phishing payload</description>
+    <mitre>
+      <id>T1218.005</id>
+    </mitre>
+  </rule>
+
+  <!-- T1566: shell/script host whose PARENT command line is in a drop path (NOT TESTED)
+       Note: parentCommandLine rarely matches real chains. Consider changing to
+       win.eventdata.commandLine or win.eventdata.currentDirectory. -->
+  <rule id="100106" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(cmd|powershell|pwsh|wscript|cscript|mshta)\.exe</field>
+    <field name="win.eventdata.parentCommandLine" type="pcre2">(?i)(\\Downloads\\|\\AppData\\Local\\Temp\\|\\Users\\Public\\)</field>
+    <description>Script/shell execution launched from a common phishing drop path (Downloads/Temp/Public)</description>
+    <mitre>
+      <id>T1566</id>
+    </mitre>
+  </rule>
+
+  <!-- Correlation: two 100105 matches within 180 seconds (VERIFIED)
+       if_matched_sid accepts ONE rule ID only, and it must be defined above this rule. -->
+  <rule id="100107" level="15" frequency="2" timeframe="180">
+    <if_matched_sid>100105</if_matched_sid>
+    <description>Multiple phishing execution indicators correlated - likely active payload chain</description>
+  </rule>
+
+</group>
+
+<group name="windows,sysmon,powershell,">
+
+  <!-- T1059.001: any PowerShell process creation (VERIFIED; noisy, see tuning note in report) -->
+  <rule id="100510" level="5">
+    <if_sid>61603</if_sid>
+    <field name="win.system.channel">Microsoft-Windows-Sysmon/Operational</field>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\powershell\.exe$</field>
+    <description>Lab detection: PowerShell process creation observed by Sysmon</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+  </rule>
+
+</group>
+
+<group name="gophish_lab,phishing_simulation,">
+
+  <!-- T1204.001 / T1059: browser spawning a command interpreter (NOT TESTED, needs GoPhish or a browser-launched shell) -->
+  <rule id="100110" level="10">
+    <if_sid>61603</if_sid>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)(chrome|msedge|firefox|iexplore)\.exe$</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(cmd|powershell|pwsh|wscript|cscript|mshta)\.exe$</field>
+    <description>GoPhish lab: Browser spawned a suspicious command interpreter.</description>
+    <mitre>
+      <id>T1204.001</id>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+
+  <!-- T1566: shell/script host running from a drop path, by its own command line (VERIFIED) -->
+  <rule id="100111" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(cmd|powershell|pwsh|wscript|cscript|mshta)\.exe</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(Downloads|AppData\\Local\\Temp|Users\\Public)</field>
+    <description>Script/shell execution running from a common phishing drop path (current directory)</description>
+    <mitre>
+      <id>T1566</id>
+    </mitre>
+  </rule>
+
+</group>
