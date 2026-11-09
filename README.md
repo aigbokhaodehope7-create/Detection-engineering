@@ -167,5 +167,4 @@ Rules are validated two ways:
 
 ## Author
 
-**Hope Imomoh**, SOC Analyst Trainee, Abuja, Nigeria
-[GitHub](https://github.com/aigbokhaodehope7-create) · [LinkedIn](https://linkedin.com/)
+**Aigbokhaode Hope Imomoh**
