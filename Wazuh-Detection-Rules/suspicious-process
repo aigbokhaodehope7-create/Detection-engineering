@@ -1,0 +1,35 @@
+<!--
+  Wazuh rule 100600 - Suspicious PowerShell: hidden window execution
+  From: PowerShell Detection Lab (the rule this investigation relies on as its custom detection)
+  Place inside /var/ossec/etc/rules/local_rules.xml (append once; check the ID is free first):
+    sudo grep -rn "100600" /var/ossec/etc/rules/
+  Then validate and reload:
+    sudo /var/ossec/bin/wazuh-analysisd -t
+    sudo systemctl restart wazuh-manager
+
+  Logic: on a Sysmon Event 1 (process created, parent rule 61603), the process image must be
+  powershell.exe AND its command line must contain -w hidden or -windowstyle hidden.
+
+  MITRE: T1059.001 (PowerShell), T1564.003 (Hide Artifacts: Hidden Window)
+
+  STATUS: fired once (6 Nov 2026, level 10) on a harmless lab test.
+  NOT measured: false-positive rate. Deployment tools, scheduled tasks and installers often run
+  PowerShell with a hidden window, so tune with an allow-list before using outside a lab.
+  KNOWN GAP: -w 1 (which PowerShell also treats as hidden) is not matched.
+
+  Test command (harmless, run in a lab VM):
+    powershell.exe -NoProfile -WindowStyle Hidden -Command "Get-Process | Out-Null"
+-->
+
+<group name="powershell,custom,">
+  <rule id="100600" level="10">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\powershell\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)-w(indowstyle)?\s+hidden</field>
+    <description>Suspicious PowerShell: hidden window execution</description>
+    <mitre>
+      <id>T1059.001</id>
+      <id>T1564.003</id>
+    </mitre>
+  </rule>
+</group>
