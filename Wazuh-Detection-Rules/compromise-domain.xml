@@ -1,0 +1,24 @@
+<!--
+  Rule: 100500
+  Project: Account Compromise Detection
+  Detects: An account being added to the Domain Admins group
+  Why: Domain Admins membership changes are rare in a healthy environment and
+       high-impact when malicious — this is one of the clearest indicators of
+       privilege escalation or account compromise in Active Directory.
+  MITRE ATT&CK: T1098 (Account Manipulation), T1078.002 (Valid Accounts: Domain Accounts)
+  False positives: legitimate IT onboarding a new admin; scheduled access review
+  Validated: HopeLabs.Local Active Directory home lab, end to end
+-->
+<group name="windows,active_directory,privilege_escalation,">
+
+  <rule id="100500" level="12">
+    <if_group>windows</if_group>
+    <field name="win.eventdata.targetUserName">Domain Admins</field>
+    <description>Account added to Domain Admins group – possible privilege escalation</description>
+    <mitre>
+      <id>T1098</id>
+      <id>T1078.002</id>
+    </mitre>
+  </rule>
+
+</group>
