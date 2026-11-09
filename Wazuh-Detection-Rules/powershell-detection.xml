@@ -1,0 +1,53 @@
+<!--
+  Rules: 100600, 100610
+  Project: PowerShell Detection Lab (Wazuh SOC Analyst Home Lab, Day 6-7)
+  Validated: Windows 10 + Ubuntu (Wazuh manager), Sysmon Event ID 1 telemetry
+-->
+<group name="powershell,windows,">
+
+  <!--
+    Rule: 100600
+    Detects: PowerShell launched with a hidden window
+    Why: Hidden-window execution is a common attacker/LOLBin technique used to
+         avoid alerting the user; kept at a moderate level since some legitimate
+         automation also hides its window.
+    MITRE ATT&CK: T1059.001 (PowerShell), T1564.003 (Hide Artifacts: Hidden Window)
+    False positives: admin or deployment scripts using -WindowStyle Hidden
+    Validated: fired on `powershell.exe -WindowStyle Hidden -Command "Get-Process"`
+  -->
+  <rule id="100600" level="10">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)powershell\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)-w(indowstyle)?\s+hidden</field>
+    <description>PowerShell launched with hidden window</description>
+    <mitre>
+      <id>T1059.001</id>
+      <id>T1564.003</id>
+    </mitre>
+  </rule>
+
+  <!--
+    Rule: 100610
+    Detects: Encoded PowerShell command spawning a reconnaissance command
+    Why: Matches the parent-child relationship between an obfuscated (base64
+         encoded) PowerShell command and a basic recon tool, rather than either
+         event in isolation, to reduce false positives from encoded commands or
+         whoami/hostname alone.
+    MITRE ATT&CK: T1059.001 (PowerShell), T1033 (System Owner/User Discovery),
+                  T1082 (System Information Discovery)
+    False positives: management tools running encoded commands for inventory
+    Validated: fired across two separate test runs (4 total alerts)
+  -->
+  <rule id="100610" level="12">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.parentCommandLine" type="pcre2">(?i)-(enc|encodedcommand)\s</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)(whoami|hostname)\.exe$</field>
+    <description>Encoded PowerShell spawned recon command (whoami/hostname)</description>
+    <mitre>
+      <id>T1059.001</id>
+      <id>T1033</id>
+      <id>T1082</id>
+    </mitre>
+  </rule>
+
+</group>
