@@ -1,0 +1,29 @@
+# powershell_encoded.rules - Suricata network detections related to the Process Chain Triage Lab
+# The lab chain itself produced NO network or DNS activity, so these rules cannot detect the lab test.
+# They cover the network-side counterparts of the same technique (T1059.001 encoded PowerShell,
+# T1033 / T1082 discovery commands) when a command is delivered or sent over cleartext HTTP/TCP.
+# STATUS: written for lab use, NOT tested against live traffic. Validate with:
+#   sudo suricata -T -c /etc/suricata/suricata.yaml -S powershell_encoded.rules
+# SIDs 1000101+ are used to avoid clashing with phishing.rules (1000001-1000007).
+# Base64 strings below are UTF-16LE, the encoding PowerShell expects for -EncodedCommand:
+#   dwBoAG8AYQBtAGkA            = "whoami"   (seen at the start of the lab's encoded command)
+#   AGgAbwBzAHQAbgBhAG0AZQA     = "hostname" (as it appears after "whoami; " in the lab's encoded command)
+
+# T1059.001: PowerShell -EncodedCommand text sent out in an HTTP request body
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"LAB PSTRIAGE PowerShell -EncodedCommand in outbound HTTP request body"; flow:established,to_server; http.request_body; content:"-EncodedCommand"; nocase; classtype:trojan-activity; metadata:mitre_technique_id T1059.001; sid:1000101; rev:1;)
+
+# T1059.001: PowerShell encoded command delivered inside an HTTP response (script or document download)
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LAB PSTRIAGE PowerShell encoded command in HTTP response"; flow:established,to_client; file.data; content:"powershell"; nocase; pcre:"/powershell(\.exe)?\s[^\r\n]{0,200}\s-e(nc[a-z]*)?\s+[A-Za-z0-9+\/=]{16,}/i"; classtype:trojan-activity; metadata:mitre_technique_id T1059.001; sid:1000102; rev:1;)
+
+# T1059.001: encoded command seen in any cleartext TCP stream (reverse shell or non-HTTP delivery)
+alert tcp $HOME_NET any <> $EXTERNAL_NET any (msg:"LAB PSTRIAGE PowerShell -EncodedCommand in cleartext TCP stream"; flow:established; content:"powershell"; nocase; content:"-EncodedCommand"; nocase; distance:0; within:200; classtype:trojan-activity; metadata:mitre_technique_id T1059.001; sid:1000103; rev:1;)
+
+# T1033: Base64 (UTF-16LE) of "whoami" in outbound HTTP request body
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"LAB PSTRIAGE Base64 UTF-16LE whoami in outbound HTTP request body"; flow:established,to_server; http.request_body; content:"dwBoAG8AYQBtAGkA"; classtype:trojan-activity; metadata:mitre_technique_id T1033; sid:1000104; rev:1;)
+
+# T1082: Base64 (UTF-16LE) of "hostname" in outbound HTTP request body
+alert http $HOME_NET any -> $EXTERNAL_NET any (msg:"LAB PSTRIAGE Base64 UTF-16LE hostname in outbound HTTP request body"; flow:established,to_server; http.request_body; content:"AGgAbwBzAHQAbgBhAG0AZQA"; classtype:trojan-activity; metadata:mitre_technique_id T1082; sid:1000105; rev:1;)
+
+# T1033 / T1082: the same Base64 discovery strings in an inbound HTTP response (command delivered to the host)
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LAB PSTRIAGE Base64 UTF-16LE whoami in inbound HTTP response"; flow:established,to_client; file.data; content:"dwBoAG8AYQBtAGkA"; classtype:trojan-activity; metadata:mitre_technique_id T1033; sid:1000106; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LAB PSTRIAGE Base64 UTF-16LE hostname in inbound HTTP response"; flow:established,to_client; file.data; content:"AGgAbwBzAHQAbgBhAG0AZQA"; classtype:trojan-activity; metadata:mitre_technique_id T1082; sid:1000107; rev:1;)
