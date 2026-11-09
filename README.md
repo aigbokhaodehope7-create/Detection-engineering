@@ -163,8 +163,7 @@ Rules are validated two ways:
 
 ## Related Repositories
 
-- [SOC-Portfolio](https://github.com/) — incident reports, investigation writeups
-- [SOC-Home-Lab-Evidence](https://github.com/) — lab build evidence, screenshots, live detection validation
+aigbokhaodehope7-create/SOC-Home-Lab-Evidence — lab build evidence, screenshots, live detection validation
 
 ## Author
 
