@@ -149,7 +149,7 @@ Each category folder has its own `README.md` explaining what that category detec
 Rules are validated two ways:
 
 1. **Static/sample testing** — sample log lines, PCAPs, or binaries run against the rule (`sigma convert`, `yara` CLI, `wazuh-logtest`) to confirm it matches intended data and not benign data.
-2. **Live validation** — rule deployed in the home SIEM lab and fired against a real simulated attack. See linked lab reports and [SOC-Home-Lab-Evidence](https://github.com/) for screenshots and alert JSON.
+2. **Live validation** — rule deployed in the home SIEM lab and fired against a real simulated attack. See linked lab reports and [aigbokhaodehope7-create/SOC-Home-Lab-Evidence](https://github.com/aigbokhaodehope7-create/SOC-Home-Lab-Evidence) for screenshots and alert JSON.
 
 ## Roadmap
 
@@ -163,8 +163,9 @@ Rules are validated two ways:
 
 ## Related Repositories
 
-aigbokhaodehope7-create/SOC-Home-Lab-Evidence — lab build evidence, screenshots, live detection validation
+- [aigbokhaodehope7-create/SOC-Home-Lab-Evidence](https://github.com/aigbokhaodehope7-create/SOC-Home-Lab-Evidence) — lab build evidence, screenshots, live detection validation
 
 ## Author
 
-**Aigbokhaode Hope Imomoh**
+**Hope Imomoh**, SOC Analyst Trainee, Abuja, Nigeria
+[GitHub](https://github.com/aigbokhaodehope7-create) · [LinkedIn](https://linkedin.com/)
