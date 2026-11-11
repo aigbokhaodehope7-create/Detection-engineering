@@ -1,0 +1,31 @@
+<group name="persistence,windows,">
+
+  <rule id="100620" level="10">
+    <if_sid>60228</if_sid>
+    <description>Scheduled task created: $(win.eventdata.taskName)</description>
+    <mitre><id>T1053.005</id></mitre>
+  </rule>
+
+  <rule id="100621" level="12">
+    <if_sid>61138</if_sid>
+    <field name="win.eventdata.imagePath" type="pcre2">(?i)cmd\.exe|powershell|Users.Public|.Temp.</field>
+    <description>Suspicious service installed: $(win.eventdata.serviceName)</description>
+    <mitre><id>T1543.003</id></mitre>
+  </rule>
+
+  <rule id="92302" level="12" overwrite="yes">
+    <if_sid>92300</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)reg\.exe</field>
+    <options>no_full_log</options>
+    <description>Run key persistence via reg.exe (escalated from level 6)</description>
+    <mitre><id>T1547.001</id></mitre>
+  </rule>
+
+  <rule id="100622" level="12">
+    <if_sid>92300</if_sid>
+    <field name="win.eventdata.image" type="pcre2" negate="yes">(?i)reg\.exe|msedge\.exe|OneDrive\.exe|CompatTelRunner</field>
+    <description>Run key persistence by $(win.eventdata.image)</description>
+    <mitre><id>T1547.001</id></mitre>
+  </rule>
+
+</group>
