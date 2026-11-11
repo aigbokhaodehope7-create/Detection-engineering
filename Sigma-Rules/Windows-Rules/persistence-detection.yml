@@ -1,0 +1,271 @@
+title: Windows Scheduled Task Created With Autostart Trigger And Privileged Or Suspicious Action
+id: 3e6280e2-8626-4c6d-9c9b-f6f80856b59d
+status: experimental
+description: |
+    Detects creation of a Windows scheduled task (Security event 4698) that is set to start automatically
+    (at logon or at boot) AND either runs as SYSTEM or highest privileges, or launches a command interpreter,
+    script host, living-off-the-land binary or a program from a user-writable path.
+    Attackers use such tasks for persistence (T1053.005). Requires the audit subcategory
+    "Other Object Access Events" (Success) to be enabled; without it event 4698 is never written.
+references:
+    - https://attack.mitre.org/techniques/T1053/005/
+    - Internal lab report - Persistence Detection Laboratory Report (9 November 2026)
+author: Aigbokhaode Hope Imomoh
+date: 2026-11-10
+tags:
+    - attack.persistence
+    - attack.execution
+    - attack.privilege-escalation
+    - attack.t1053.005
+logsource:
+    product: windows
+    service: security
+detection:
+    selection_event:
+        EventID: 4698
+    selection_autostart:
+        TaskContent|contains:
+            - '<LogonTrigger>'
+            - '<BootTrigger>'
+            - '&lt;LogonTrigger&gt;'
+            - '&lt;BootTrigger&gt;'
+    selection_privileged:
+        TaskContent|contains:
+            - '<UserId>S-1-5-18</UserId>'
+            - '<UserId>SYSTEM</UserId>'
+            - '<UserId>NT AUTHORITY\SYSTEM</UserId>'
+            - '<RunLevel>HighestAvailable</RunLevel>'
+            - '&lt;UserId&gt;S-1-5-18&lt;/UserId&gt;'
+    selection_payload:
+        TaskContent|contains:
+            - 'cmd.exe'
+            - 'cmd /c'
+            - 'powershell'
+            - 'pwsh'
+            - 'wscript'
+            - 'cscript'
+            - 'mshta'
+            - 'rundll32'
+            - 'regsvr32'
+            - '\Users\Public\'
+            - '\AppData\'
+            - '\Temp\'
+            - 'http://'
+            - 'https://'
+    filter_optional_vendor_tasks:
+        TaskName|startswith:
+            - '\Microsoft\Windows\'
+            - '\Microsoft\Office\'
+            - '\Microsoft\VisualStudio\'
+    condition: selection_event and selection_autostart and (selection_privileged or selection_payload) and not 1 of filter_optional_*
+fields:
+    - TaskName
+    - SubjectUserName
+    - SubjectDomainName
+    - SubjectLogonId
+    - TaskContent
+falsepositives:
+    - Legitimate software installers and endpoint management tools that register autostart tasks running as SYSTEM
+    - Administrators deploying maintenance scripts (validate the task name, author and change ticket)
+    - Attackers can imitate vendor task paths (for example \Microsoft\Windows\), so review the filter list periodically
+level: high
+---
+title: Schtasks Task Creation With Autostart Trigger In Privileged Or Suspicious Context
+id: c755a31e-8e23-4b50-8776-3442b38aa100
+related:
+    - id: 3e6280e2-8626-4c6d-9c9b-f6f80856b59d
+      type: similar
+status: experimental
+description: |
+    Detects schtasks.exe creating a scheduled task that runs at logon, at startup or when idle, and that
+    either runs as SYSTEM or executes a command interpreter, script host, living-off-the-land binary or a
+    program from a user-writable location. This is the process-creation companion to the Security 4698 rule
+    and still alerts when task-creation auditing is disabled or the 4698 event is missing. It also records
+    failed attempts, which Windows 4698 events do not.
+references:
+    - https://attack.mitre.org/techniques/T1053/005/
+    - https://learn.microsoft.com/sysinternals/downloads/sysmon
+    - Internal lab report - Persistence Detection Laboratory Report (9 November 2026)
+author: Aigbokhaode Hope Imomoh
+date: 2026-11-10
+tags:
+    - attack.persistence
+    - attack.execution
+    - attack.privilege-escalation
+    - attack.t1053.005
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_img:
+        - Image|endswith: '\schtasks.exe'
+        - OriginalFileName: 'schtasks.exe'
+    selection_create:
+        CommandLine|windash|contains: ' -create '
+    selection_autostart:
+        CommandLine|windash|contains:
+            - ' -sc onlogon'
+            - ' -sc onstart'
+            - ' -sc onidle'
+    selection_privileged:
+        CommandLine|windash|contains:
+            - ' -ru system'
+            - ' -ru "system"'
+            - ' -ru nt authority\system'
+            - ' -ru "nt authority\system"'
+    selection_payload:
+        CommandLine|contains:
+            - 'cmd.exe'
+            - 'cmd /c'
+            - 'powershell'
+            - 'pwsh'
+            - 'wscript'
+            - 'cscript'
+            - 'mshta'
+            - 'rundll32'
+            - 'regsvr32'
+            - '\Users\Public\'
+            - '\AppData\'
+            - '\Temp\'
+            - 'http://'
+            - 'https://'
+    filter_optional_vendor_tasks:
+        CommandLine|contains:
+            - '\Microsoft\Windows\'
+            - '\GoogleUpdate'
+            - '\MicrosoftEdgeUpdate'
+    condition: selection_img and selection_create and selection_autostart and (selection_privileged or selection_payload) and not 1 of filter_optional_*
+fields:
+    - CommandLine
+    - ParentImage
+    - ParentCommandLine
+    - User
+    - LogonId
+falsepositives:
+    - Software installers and updaters that register autostart tasks from the command line
+    - Administrator scripts and configuration-management tooling
+    - Add exclusions by parent process (for example approved deployment agents), not by broad command-line text
+level: high
+---
+title: Suspicious Windows Service Installed (Command Interpreter Or User-Writable Path)
+id: 3fac8b76-d66a-41de-8f72-735da3a067c3
+status: experimental
+description: |
+    Detects installation of a new Windows service (System event 7045, Service Control Manager) whose
+    image path points to a command interpreter, script host, living-off-the-land binary or a user-writable
+    directory. Legitimate services run dedicated service executables, so cmd.exe or PowerShell as a
+    service image is a strong persistence and privilege-escalation indicator (T1543.003). The service
+    does not need to start successfully; the installation event is the detection point.
+references:
+    - https://attack.mitre.org/techniques/T1543/003/
+    - Internal lab report - Persistence Detection Laboratory Report (9 November 2026)
+author: Aigbokhaode Hope Imomoh
+date: 2026-11-10
+tags:
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.t1543.003
+logsource:
+    product: windows
+    service: system
+detection:
+    selection_event:
+        Provider_Name: 'Service Control Manager'
+        EventID: 7045
+    selection_image:
+        ImagePath|contains:
+            - 'cmd.exe'
+            - 'cmd /c'
+            - 'powershell'
+            - 'pwsh'
+            - 'wscript'
+            - 'cscript'
+            - 'mshta'
+            - 'rundll32'
+            - 'regsvr32'
+            - '\Users\Public\'
+            - '\AppData\'
+            - '\Temp\'
+            - '\ProgramData\'
+    condition: selection_event and selection_image
+fields:
+    - ServiceName
+    - ImagePath
+    - ServiceType
+    - StartType
+    - AccountName
+falsepositives:
+    - Some software installers briefly register services from temporary or ProgramData folders
+    - Remote administration and deployment tools that use a command wrapper (confirm with the change record)
+level: high
+---
+title: Registry Run Key Modified By Scripting Tool Or With Suspicious Payload
+id: 6a117e7e-8b1d-4556-9a1e-02d4b2a08682
+status: experimental
+description: |
+    Detects a value being set under a Run or RunOnce autostart key (Sysmon event 13) by a command-line or
+    scripting tool (reg.exe, PowerShell, cmd, script hosts and similar) OR where the value launches a
+    command interpreter or a program from a user-writable path. Run keys execute programs at user logon and
+    are a common persistence mechanism (T1547.001). Detects both reg.exe and PowerShell writers.
+references:
+    - https://attack.mitre.org/techniques/T1547/001/
+    - https://learn.microsoft.com/sysinternals/downloads/sysmon
+    - Internal lab report - Persistence Detection Laboratory Report (9 November 2026)
+author: Aigbokhaode Hope Imomoh
+date: 2026-11-10
+tags:
+    - attack.persistence
+    - attack.privilege-escalation
+    - attack.t1547.001
+logsource:
+    category: registry_set
+    product: windows
+detection:
+    selection_key:
+        TargetObject|contains:
+            - '\CurrentVersion\Run\'
+            - '\CurrentVersion\RunOnce\'
+            - '\CurrentVersion\Policies\Explorer\Run\'
+    selection_writer:
+        Image|endswith:
+            - '\reg.exe'
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\cmd.exe'
+            - '\wscript.exe'
+            - '\cscript.exe'
+            - '\mshta.exe'
+            - '\rundll32.exe'
+            - '\regsvr32.exe'
+            - '\wmic.exe'
+    selection_payload:
+        Details|contains:
+            - 'cmd.exe'
+            - 'powershell'
+            - 'pwsh'
+            - 'wscript'
+            - 'cscript'
+            - 'mshta'
+            - 'rundll32'
+            - 'regsvr32'
+            - '\Users\Public\'
+            - '\AppData\'
+            - '\Temp\'
+            - 'http://'
+            - 'https://'
+    filter_optional_onedrive:
+        Details|contains: '\Microsoft\OneDrive\OneDrive.exe'
+    filter_optional_edge:
+        Image|endswith: '\msedge.exe'
+        Details|contains: '\Microsoft\Edge\Application\msedge.exe'
+    condition: selection_key and (selection_writer or selection_payload) and not 1 of filter_optional_*
+fields:
+    - TargetObject
+    - Details
+    - Image
+    - User
+    - ProcessId
+falsepositives:
+    - Software installers and administrative scripts that add legitimate autostart entries with reg.exe or PowerShell
+    - Per-user applications installed under AppData (OneDrive is filtered; other apps may need exclusions after review)
+level: high
